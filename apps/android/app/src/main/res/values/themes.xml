@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Launch window before Compose draws: GEIST dark, the default look (core/themes.json). MainActivity then sets the
+         window background and bar icons for the chosen look and mode. -->
+    <style name="Theme.Kartei" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#0b1220</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <!-- Android 12+ draws its own splash and ignores windowBackground. -->
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">#0b1220</item>
+    </style>
+</resources>

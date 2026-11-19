@@ -1,0 +1,149 @@
+name: Kartei
+# Signing. Default "local": ad-hoc ("-"), no Apple team needed. The widget reads an App Group snapshot the app
+# writes (group.pro.geist.bergmoench.beta). Xcode refuses App Group entitlements without a team, so on macOS the embedded widget
+# is re-signed ad-hoc with them after the build (script below); on iOS the App Group needs a team.
+# With an Apple team: set KARTEI_SIGNING to "team" and DEVELOPMENT_TEAM to your team ID below, and register the
+# App Group group.pro.geist.bergmoench.beta for pro.geist.bergmoench and pro.geist.bergmoench.Widget (Xcode can do it automatically).
+# Release builds pass both on the command line instead (scripts/testflight.sh), so no team ID lives in this file.
+settings:
+  base:
+    KARTEI_SIGNING: local
+    DEVELOPMENT_TEAM: ""
+options:
+  bundleIdPrefix: pro.geist
+  deploymentTarget:
+    iOS: "17.0"
+    macOS: "14.0"
+packages:
+  SwiftProtobuf:
+    url: https://github.com/apple/swift-protobuf.git
+    from: 1.40.0
+targets:
+  Kartei:
+    type: application
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: Kartei
+      - path: Shared
+      - path: ../../core/gen/swift
+        group: Generated
+    dependencies:
+      - target: KarteiWidget
+        embed: true
+      - package: SwiftProtobuf
+      - framework: ../../core/build/KarteiCore.xcframework
+        embed: false
+      - sdk: Security.framework
+      - sdk: SystemConfiguration.framework
+      - sdk: libiconv.tbd
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: pro.geist.bergmoench
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: AppIcon-Gruvbox
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: 1
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_CFBundleDisplayName: Bergmönch
+        # Only standard HTTPS (sync with a self-hosted server); no own cryptography.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.education
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "-"
+        ENABLE_HARDENED_RUNTIME: NO
+        # App Group shared with the widget (Shared/ReachSnapshot.swift: ReachShared.appGroup).
+        CODE_SIGN_ENTITLEMENTS[sdk=iphone*]: Entitlements/Kartei-iOS-$(KARTEI_SIGNING).entitlements
+        CODE_SIGN_ENTITLEMENTS[sdk=macosx*]: Entitlements/Kartei-macOS-$(KARTEI_SIGNING).entitlements
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    postBuildScripts:
+      - name: Ad-hoc App Group for the widget (macOS, local signing)
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ "$PLATFORM_NAME" = "macosx" ] && [ "$KARTEI_SIGNING" = "local" ]; then
+            APPEX="$TARGET_BUILD_DIR/$PLUGINS_FOLDER_PATH/KarteiWidget.appex"
+            if [ -d "$APPEX" ]; then
+              codesign --force --sign - --timestamp=none --entitlements "$SRCROOT/KarteiWidget/KarteiWidget-macOS-team.entitlements" "$APPEX"
+            fi
+          fi
+  KarteiWidget:
+    type: app-extension
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: KarteiWidget
+      - path: Shared
+      - path: Kartei/Resources/BricolageGrotesque.ttf
+        buildPhase: resources
+      - path: Kartei/Resources/DMSans.ttf
+        buildPhase: resources
+      - path: Kartei/Resources/Nunito.ttf
+        buildPhase: resources
+      - path: Kartei/Resources/NotoSerif.ttf
+        buildPhase: resources
+    dependencies:
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    info:
+      path: KarteiWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Bergmönch
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: pro.geist.bergmoench.Widget
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: 1
+        SWIFT_VERSION: "5.0"
+        SKIP_INSTALL: YES
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "-"
+        ENABLE_HARDENED_RUNTIME: NO
+        CODE_SIGN_ENTITLEMENTS[sdk=iphone*]: KarteiWidget/KarteiWidget-iOS-$(KARTEI_SIGNING).entitlements
+        CODE_SIGN_ENTITLEMENTS[sdk=macosx*]: KarteiWidget/KarteiWidget-macOS-$(KARTEI_SIGNING).entitlements
+  KarteiTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources: [KarteiTests]
+    dependencies:
+      - target: Kartei
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Kartei.app/Contents/MacOS/Kartei"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        CODE_SIGN_IDENTITY: "-"
+  KarteiUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources: [KarteiUITests]
+    dependencies:
+      - target: Kartei
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Kartei
+        CODE_SIGN_IDENTITY: "-"
+schemes:
+  KarteiUI:
+    build:
+      targets:
+        Kartei: all
+        KarteiUITests: [test]
+    test:
+      targets: [KarteiUITests]
+  Kartei:
+    build:
+      targets:
+        Kartei: all
+        KarteiTests: [test]
+    test:
+      targets: [KarteiTests]

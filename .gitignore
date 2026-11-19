@@ -1,0 +1,34 @@
+# Anki's source is a separate checkout (AGPL, upstream git history)
+spike/anki/
+# build output
+core/ffi/target/
+core/build/
+apps/apple/build/
+apps/apple/Kartei.xcodeproj/
+apps/android/.gradle/
+apps/android/build/
+apps/android/app/build/
+apps/android/local.properties
+apps/android/app/src/main/jniLibs/
+mockups/dist/
+shots/
+__pycache__/
+.DS_Store
+*.apkg.tmp
+apps/apple/build-*/
+apps/apple/build-device/
+# Course decks: fetched from the deck repositories and rebuilt (content/courses: sync_decks.sh, build_decks.py)
+content/courses/src/
+content/courses/out/
+content/courses/__pycache__/
+apps/apple/Kartei/Resources/course-*.apkg
+apps/android/app/src/main/assets/courses/
+# Release signing (never in git)
+scripts/release.local.env
+apps/android/keystore.properties
+*.jks
+*.keystore
+*.p8
+# Private design work (mockups, concept art, icon rounds): its own local repository
+/design/
+.claude/

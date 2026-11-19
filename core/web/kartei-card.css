@@ -1,0 +1,34 @@
+/* Copyright: Kartei contributors. License: GNU AGPL, version 3 or later. */
+/* Shared by the Apple and Android card pages; loaded after the deck's CSS and Kartei's type. */
+
+/* Replay button where a [sound:] or TTS tag stood (Anki's av_refs_to_play_icons). */
+.k-play { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 0 4px;
+  vertical-align: middle; border: 1px solid #504945; border-radius: 2px; color: #ebdbb2 !important; text-decoration: none; }
+.k-play svg { width: 18px; height: 18px; fill: currentColor; }
+.k-play:active { background: #3c3836; }
+
+/* Typed answer, as mockups/screens/typed.html. */
+.k-typed { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #504945; margin-top: 20px; padding-top: 20px; }
+/* Directly under the answer rule (Basic, type in the answer): no second rule. */
+.k-a > .k-typed:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
+.k-typed .ln { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; align-items: baseline; }
+.k-typed .meta { font: 400 13px/18px "DM Sans", sans-serif; color: #a89984; }
+.k-typed .v { font: 500 20px/28px "DM Sans", sans-serif; letter-spacing: -0.02em; overflow-wrap: anywhere; color: #ebdbb2; }
+.k-typed .v code, .k-typed code#typeans { font: inherit; background: none; color: inherit; }
+.k-typed .typeGood { color: #ebdbb2; }
+.k-typed .typeBad { text-decoration: line-through; text-decoration-thickness: 2px; color: #ebdbb2;
+  background: rgba(251, 73, 52, 0.35); }
+.k-typed .typeMissed { text-decoration: none; border-bottom: 2px solid #fabd2f; background: rgba(250, 189, 47, 0.22); }
+.k-typed .note { font: 400 13px/18px "DM Sans", sans-serif; color: #a89984; }
+.k-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Image occlusion (Anki's ts/routes/image-occlusion/review.scss). */
+#image-occlusion-container { position: relative; margin: 0 auto; max-height: calc(95vh - 40px); }
+#image-occlusion-container img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; max-width: unset; max-height: unset; }
+#image-occlusion-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+/* Kartei: the asked shape on the answer side is outlined in the accent, 3 px, so it is easy to find (Anki: 1 px pink). */
+#image-occlusion-canvas { --highlight-shape-border: 3px #fabd2f; }
+#toggle { margin-top: 16px; min-height: 44px; padding: 0 16px; font: 500 15px/20px "DM Sans", sans-serif; color: #ebdbb2;
+  background: #3c3836; border: 0; border-radius: 2px; }
+/* Answer pages without <hr id=answer> are shown whole, in body type. */
+.k-whole { font: 500 20px/28px "DM Sans", sans-serif; }

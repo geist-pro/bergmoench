@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Release: https only. Kartei's sync code asks this policy before using plain http,
+     because the Rust backend's own HTTP client does not consult it. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

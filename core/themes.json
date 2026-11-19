@@ -1,0 +1,100 @@
+{
+  "_comment": "Kartei colour themes, one source for both apps and the card web view. Values come from mockups/css/tokens.css, where text pairs pass WCAG AA (tools/capture.py). \"control\" is the outline and track colour for controls and states, at 3:1 or more on bg; \"rule\" is for plain dividers only. Flag colours are Anki's and stay the same in every theme.",
+  "families": {
+    "gruvbox": {
+      "fonts": {
+        "display": "Bricolage Grotesque",
+        "body": "DM Sans",
+        "data": "DM Mono"
+      },
+      "dark": {
+        "bg": "#282828",
+        "surface": "#32302f",
+        "surface2": "#3c3836",
+        "rule": "#504945",
+        "text": "#ebdbb2",
+        "muted": "#a89984",
+        "display": "#ebdbb2",
+        "accent": "#fabd2f",
+        "onAccent": "#1d2021",
+        "accentRule": "#fabd2f",
+        "forgot": "#fb6a57",
+        "onForgot": "#1d2021",
+        "new": "#83a598",
+        "learning": "#fe8019",
+        "control": "#928374"
+      },
+      "light": {
+        "bg": "#fbf1c7",
+        "surface": "#f2e5bc",
+        "surface2": "#ebdbb2",
+        "rule": "#d5c4a1",
+        "text": "#282828",
+        "muted": "#665c54",
+        "display": "#282828",
+        "accent": "#282828",
+        "onAccent": "#fbf1c7",
+        "accentRule": "#b57614",
+        "forgot": "#9d0006",
+        "onForgot": "#fbf1c7",
+        "new": "#076678",
+        "learning": "#af3a03",
+        "control": "#7c6f64"
+      }
+    },
+    "geist": {
+      "fonts": {
+        "display": "Nunito",
+        "body": "Noto Serif",
+        "data": "Courier Prime"
+      },
+      "dark": {
+        "bg": "#0b1220",
+        "surface": "#121b30",
+        "surface2": "#1a2540",
+        "rule": "#26335a",
+        "text": "#f4f7fb",
+        "muted": "#aab7d2",
+        "display": "#8fb3f2",
+        "accent": "#29b7ea",
+        "onAccent": "#161616",
+        "accentRule": "#29b7ea",
+        "forgot": "#ff7a6b",
+        "onForgot": "#161616",
+        "new": "#6fcdf2",
+        "learning": "#f2a865",
+        "control": "#5a6ea6"
+      },
+      "light": {
+        "bg": "#ffffff",
+        "surface": "#f2f6fb",
+        "surface2": "#e4ebf5",
+        "rule": "#d6deea",
+        "text": "#161616",
+        "muted": "#3a4a66",
+        "display": "#193f82",
+        "accent": "#193f82",
+        "onAccent": "#ffffff",
+        "accentRule": "#1687b5",
+        "forgot": "#b42318",
+        "onForgot": "#ffffff",
+        "new": "#0a6e96",
+        "learning": "#a14a00",
+        "control": "#7f8ea9"
+      }
+    }
+  },
+  "flags": [
+    "#e5484d",
+    "#f08c2e",
+    "#46a758",
+    "#3e8ed0",
+    "#d6409f",
+    "#12a594",
+    "#8e4ec6"
+  ],
+  "defaults": {
+    "family": "geist",
+    "mode": "dark"
+  }
+}
