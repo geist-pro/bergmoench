@@ -7,6 +7,8 @@
 #   ASC_ISSUER_ID     App Store Connect issuer id
 #   ASC_KEY_PATH      path to AuthKey_<id>.p8   (default: ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8)
 # Optional: BUILD_NUMBER (default: minutes since 2026-01-01, so every upload is higher than the last).
+#           KARTEI_SIGNING=local builds without the App Group (the widget then shows no data); use it until
+#           group.pro.geist.bergmoench.beta is registered for both bundle ids in the developer portal.
 #
 # usage: scripts/testflight.sh [--no-upload]
 set -euo pipefail
@@ -26,13 +28,11 @@ OUT="$ROOT/apps/apple/build-release"
 rm -rf "$OUT"; mkdir -p "$OUT"
 xcodebuild -project Kartei.xcodeproj -scheme Kartei -configuration Release \
   -destination "generic/platform=iOS" -archivePath "$OUT/Bergmoench.xcarchive" \
-  KARTEI_SIGNING=team DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_IDENTITY="Apple Development" \
+  KARTEI_SIGNING="${KARTEI_SIGNING:-team}" DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_IDENTITY="Apple Development" \
   CURRENT_PROJECT_VERSION="$BUILD_NUMBER" "${AUTH[@]}" archive | tail -3
-if [[ "${1:-}" == "--no-upload" ]]; then
-  sed 's/<string>export<\/string>/<string>export<\/string>/' ExportOptions.plist > "$OUT/ExportOptions.plist"
-else
-  sed 's/<string>export<\/string>/<string>upload<\/string>/' ExportOptions.plist > "$OUT/ExportOptions.plist"
-fi
+[[ -d "$OUT/Bergmoench.xcarchive" ]] || { echo "archive failed"; exit 1; }
+cp ExportOptions.plist "$OUT/ExportOptions.plist"
+[[ "${1:-}" == "--no-upload" ]] || /usr/libexec/PlistBuddy -c "Set :destination upload" "$OUT/ExportOptions.plist"
 /usr/libexec/PlistBuddy -c "Add :teamID string $APPLE_TEAM_ID" "$OUT/ExportOptions.plist"
 xcodebuild -exportArchive -archivePath "$OUT/Bergmoench.xcarchive" -exportPath "$OUT/export" \
   -exportOptionsPlist "$OUT/ExportOptions.plist" "${AUTH[@]}" | tail -5
