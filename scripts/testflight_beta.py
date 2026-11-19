@@ -37,7 +37,7 @@ WHAT_TO_TEST = (
     "1. The first run: pick a course deck or import your own .apkg from Files.\n"
     "2. A review session, with two buttons or four (Settings), and undo.\n"
     "3. An exam date on a deck, the reading settings, and browse and search.\n"
-    "Known: the Home Screen widget shows no data in this build.\n"
+    "4. The Home Screen widget, after a first review.\n"
     "A wrong card? The decks are open: github.com/geist-pro. Everything else: TestFlight feedback or e-mail."
 )
 REVIEW_NOTES = (
