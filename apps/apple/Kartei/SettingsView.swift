@@ -20,6 +20,18 @@ struct SettingsView: View {
             allCases.filter { $0 != .touch }
             #endif
         }
+        /// The toolbar symbol of the page in the macOS Settings window.
+        var symbol: String {
+            switch self {
+            case .appearance: "paintpalette"
+            case .reading: "textformat.size"
+            case .study: "rectangle.on.rectangle"
+            case .touch: "hand.draw"
+            case .pace: "gauge.with.dots.needle.50percent"
+            case .reminders: "bell"
+            case .sync: "arrow.triangle.2.circlepath"
+            }
+        }
     }
 
     @State private var page: Page? = Self.startPage
@@ -38,7 +50,7 @@ struct SettingsView: View {
                 VStack(spacing: 0) {
                     ScreenNav(title: "Settings", back: { self.page = nil })
                     ScrollView {
-                        content(page)
+                        SettingsPage(page: page, store: store, prefs: prefs)
                             .padding(.horizontal, 20).padding(.bottom, 32)
                             .frame(maxWidth: 560, alignment: .leading).frame(maxWidth: .infinity)
                     }
@@ -96,10 +108,17 @@ struct SettingsView: View {
             return "Not set up. Your own Anki sync server only."
         }
     }
+}
 
-    @ViewBuilder private func content(_ p: Page) -> some View {
+/// One settings topic, shared by the iOS page and the macOS Settings window.
+struct SettingsPage: View {
+    let page: SettingsView.Page
+    let store: DeckStore
+    let prefs: StudyPrefs
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            switch p {
+            switch page {
             case .appearance: AppearanceSection()
             case .reading: ReadingSection(store: store)
             case .study: StudySection(store: store, prefs: prefs)

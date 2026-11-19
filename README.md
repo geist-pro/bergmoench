@@ -60,7 +60,7 @@ cd ../..
 # 4a. Apple
 cd apps/apple && xcodegen generate
 xcodebuild -project Kartei.xcodeproj -scheme Kartei -destination 'platform=macOS' -derivedDataPath build build
-open build/Build/Products/Debug/Kartei.app
+open build/Build/Products/Debug/Bergmönch.app
 
 # 4b. Android
 cd apps/android && JAVA_HOME=/path/to/jdk17 ./gradlew :app:assembleDebug
@@ -71,6 +71,17 @@ The default signing is ad hoc, so no Apple developer team is needed for the Mac 
 For a device or TestFlight, see the comments at the top of `apps/apple/project.yml` and
 `scripts/testflight.sh`. A signed Android release needs `apps/android/keystore.properties`
 (see `apps/android/app/build.gradle.kts`).
+
+## The Mac app
+
+The same sources build a Mac app with its own shell: one resizable window, the three screens in the window
+toolbar (also Command-1 to 3), Settings in their own window (Command-comma), File > Import Deck, and `.apkg`
+files opened from the Finder or dropped on the window. Review is keyboard-first; Help > Keyboard Shortcuts
+lists the keys, which are Anki's. The Mac-only code is in `apps/apple/Kartei/MacApp.swift`.
+
+Local builds are ad hoc and not sandboxed. A release build (`scripts/testflight.sh --mac`) is signed with the
+team and runs in the App Sandbox. It is Apple Silicon only, because `core/ffi/build.sh` builds the Rust core for
+arm64 on the Mac.
 
 ## Tests
 

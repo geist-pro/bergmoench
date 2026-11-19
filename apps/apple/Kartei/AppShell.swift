@@ -1,14 +1,26 @@
 // License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 
 import SwiftUI
+import UniformTypeIdentifiers
 
-enum Tab: String, CaseIterable { case decks = "Decks", browse = "Browse", stats = "Stats", settings = "Settings" }
+enum Tab: String, CaseIterable {
+    case decks = "Decks", browse = "Browse", stats = "Stats", settings = "Settings"
+
+    /// The Mac has no Settings tab: settings are a window of their own, under Command-comma.
+    static var shown: [Tab] {
+        #if os(macOS)
+        [.decks, .browse, .stats]
+        #else
+        allCases
+        #endif
+    }
+}
 
 /// Top-level navigation: onboarding on first run, otherwise the four tabs, and the review screen over everything.
 struct AppShell: View {
     @Bindable var store: DeckStore
-    @State private var prefs = StudyPrefs()
-    @State private var tab: Tab = Self.startTab
+    let prefs: StudyPrefs
+    @Bindable var router: Router
     @State private var session: ReviewSession?
     /// The filtered deck behind the guided first session; removed when that session closes so the cards go home.
     @State private var firstSessionDeck: Int64?
@@ -38,8 +50,8 @@ struct AppShell: View {
             } else {
                 tabs {
                     Group {
-                        switch tab {
-                        case .decks: HomeView(store: store, study: study)
+                        switch router.tab {
+                        case .decks: HomeView(store: store, study: study).frame(maxWidth: Self.pageWidth).frame(maxWidth: .infinity)
                         case .browse: BrowseView(store: store, study: study)
                         case .stats: StatsView(store: store)
                         case .settings: SettingsView(store: store, prefs: prefs)
@@ -85,14 +97,48 @@ struct AppShell: View {
         }
         #endif
         .onChange(of: session == nil) { _, idle in SyncController.shared.pausedForReview = !idle }
+        .onChange(of: session != nil || (prefs.loaded && !prefs.onboarded), initial: true) { _, busy in router.busy = busy }
+        // A deck opened from the Finder or Files ("Open with"), or dropped on the window.
+        .onOpenURL { open($0) }
+        .onChange(of: store.backend == nil) { _, missing in
+            if !missing { router.pendingPackages.forEach(store.importPackage); router.pendingPackages = [] }
+        }
+        #if os(macOS)
+        .dropDestination(for: URL.self) { urls, _ in
+            let packages = urls.filter { $0.pathExtension.lowercased() == "apkg" }
+            packages.forEach(open)
+            return !packages.isEmpty
+        }
+        .fileImporter(isPresented: $router.importing, allowedContentTypes: [UTType(filenameExtension: "apkg") ?? .data]) { result in
+            if case .success(let url) = result { open(url) }
+        }
+        .toolbar {
+            if session == nil && prefs.loaded && prefs.onboarded {
+                ToolbarItem(placement: .principal) {
+                    Picker("View", selection: $router.tab) {
+                        ForEach(Tab.shown, id: \.self) { Text($0 == .stats ? "Statistics" : $0.rawValue).tag($0) }
+                    }
+                    .pickerStyle(.segmented).labelsHidden()
+                    .help("Switch between your decks, the card browser and the statistics")
+                }
+            }
+        }
+        #endif
     }
 
-    /// Debug builds can open on a tab for screenshots: KARTEI_TEST_TAB=Settings.
-    private static var startTab: Tab {
-        #if DEBUG
-        if let name = ProcessInfo.processInfo.environment["KARTEI_TEST_TAB"], let t = Tab(rawValue: name) { return t }
+    /// Home keeps a readable column in a wide window; the phone uses its whole width.
+    private static var pageWidth: CGFloat {
+        #if os(macOS)
+        720
+        #else
+        .infinity
         #endif
-        return .decks
+    }
+
+    private func open(_ url: URL) {
+        guard url.isFileURL, url.pathExtension.lowercased() == "apkg" else { return }
+        router.tab = .decks
+        if store.backend == nil { router.pendingPackages.append(url) } else { store.importPackage(url) }
     }
 
     private func applyDefaults(_ backend: Backend) {
@@ -108,6 +154,10 @@ struct AppShell: View {
 
     /// iOS: the tab bar floats as glass and the screens scroll under it. macOS: the flat bar under the content.
     @ViewBuilder private func tabs<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        #if os(macOS)
+        // The Mac switches screens in the window toolbar and from the View menu.
+        content()
+        #else
         if GlassLook.on {
             content().safeAreaInset(edge: .bottom, spacing: 0) {
                 glassTabBar.padding(.horizontal, 14).padding(.top, 8).padding(.bottom, 4).scrollFade(above: 20)
@@ -115,20 +165,21 @@ struct AppShell: View {
         } else {
             VStack(spacing: 0) { content(); tabBar }
         }
+        #endif
     }
 
     private var glassTabBar: some View {
         HStack(spacing: 0) {
-            ForEach(Tab.allCases, id: \.self) { t in
-                Button { tab = t } label: {
-                    Text(t.rawValue).font(Type.body(13, tab == t ? 700 : 500)).lineLimit(1).minimumScaleFactor(0.7)
-                        .foregroundStyle(tab == t ? Ink.text : Ink.muted)
+            ForEach(Tab.shown, id: \.self) { t in
+                Button { router.tab = t } label: {
+                    Text(t.rawValue).font(Type.body(13, router.tab == t ? 700 : 500)).lineLimit(1).minimumScaleFactor(0.7)
+                        .foregroundStyle(router.tab == t ? Ink.text : Ink.muted)
                         .frame(maxWidth: .infinity, minHeight: 44)
-                        .background { if tab == t { Capsule().fill(Ink.text.opacity(0.1)) } }
+                        .background { if router.tab == t { Capsule().fill(Ink.text.opacity(0.1)) } }
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
-                .accessibilityAddTraits(tab == t ? [.isSelected] : [])
+                .accessibilityAddTraits(router.tab == t ? [.isSelected] : [])
             }
         }
         .padding(6)
@@ -137,16 +188,16 @@ struct AppShell: View {
 
     private var tabBar: some View {
         HStack(spacing: 0) {
-            ForEach(Tab.allCases, id: \.self) { t in
-                Button { tab = t } label: {
-                    Text(t.rawValue).font(Type.body(13, tab == t ? 700 : 500))
-                        .foregroundStyle(tab == t ? Ink.text : Ink.muted)
+            ForEach(Tab.shown, id: \.self) { t in
+                Button { router.tab = t } label: {
+                    Text(t.rawValue).font(Type.body(13, router.tab == t ? 700 : 500))
+                        .foregroundStyle(router.tab == t ? Ink.text : Ink.muted)
                         .frame(maxWidth: .infinity, minHeight: 48)
-                        .overlay(alignment: .top) { Rectangle().fill(tab == t ? Ink.text : .clear).frame(height: 2) }
+                        .overlay(alignment: .top) { Rectangle().fill(router.tab == t ? Ink.text : .clear).frame(height: 2) }
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityAddTraits(tab == t ? .isSelected : [])
+                .accessibilityAddTraits(router.tab == t ? .isSelected : [])
             }
         }
         .overlay(alignment: .top) { Rectangle().fill(Ink.rule).frame(height: 1) }

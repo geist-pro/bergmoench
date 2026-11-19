@@ -43,6 +43,7 @@ struct ReviewView: View {
             default: card
             }
         }
+        .frame(maxWidth: Self.readingWidth).frame(maxWidth: .infinity)
         .background(Ink.bg)
         .overlay { if actions { actionSheet } }
         .task {
@@ -50,6 +51,15 @@ struct ReviewView: View {
             session.start()
         }
         .onDisappear { session.stopAudio() }
+    }
+
+    /// A card in a wide Mac window keeps lines a person can read; phones and tablets use their width.
+    private static var readingWidth: CGFloat {
+        #if os(macOS)
+        820
+        #else
+        .infinity
+        #endif
     }
 
     private var nav: some View {
@@ -127,7 +137,14 @@ struct ReviewView: View {
     /// The controls float over the card (iOS), except while typing.
     private var floating: Bool { GlassLook.on && !typingField }
 
-    private var swipeEnabled: Bool { isAnswer && touch.swipeToGrade && !isLoading && !session.revealing }
+    private var swipeEnabled: Bool {
+        #if os(macOS)
+        // A drag on the Mac selects text on the card; grading there is the keyboard's and the buttons' job.
+        false
+        #else
+        isAnswer && touch.swipeToGrade && !isLoading && !session.revealing
+        #endif
+    }
     private var candidate: Rating? { SwipeGrade.candidate(drag, detail: prefs.detail, prefs: touch) }
 
     /// The card page, and under it the strip in the colour of the grade the drag points at.
@@ -227,6 +244,24 @@ struct ReviewView: View {
 
     /// For the first few answers: which way is which, and that the buttons still work.
     private var swipeHint: some View {
+        #if os(macOS)
+        keyHint
+        #else
+        touchHint
+        #endif
+    }
+
+    /// The Mac's version of the hint: the two keys that carry a whole session.
+    private var keyHint: some View {
+        Text(prefs.detail == .simple ? "Keys: 1 Forgot, Space Got it. More under Help > Keyboard Shortcuts."
+                                     : "Keys: 1 Forgot, 2 Hard, Space or 3 Good, 4 Easy.")
+            .font(Type.body(13, 500)).foregroundStyle(Ink.muted)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 12)
+            .overlay(alignment: .top) { Rule() }
+    }
+
+    private var touchHint: some View {
         HStack(spacing: 8) {
             Label("Forgot", systemImage: "chevron.left").labelStyle(.titleAndIcon).foregroundStyle(Ink.forgot)
             Text(Type.isLarge ? "or swipe" : "swipe the card, or use the buttons").foregroundStyle(Ink.muted).lineLimit(1).frame(maxWidth: .infinity)
