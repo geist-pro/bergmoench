@@ -132,6 +132,26 @@ final class SyncTextTests: XCTestCase {
         XCTAssertNil(try? SyncText.endpoint(from: "ftp://x").get())
     }
 
+    func testCardMediaStaysInsideTheMediaFolder() {
+        let folder = URL(fileURLWithPath: "/tmp/col/collection.media")
+        XCTAssertEqual(CardSchemeHandler.mediaFile(named: "fig 1.png", in: folder)?.path, "/tmp/col/collection.media/fig 1.png")
+        // what a card's "..%2Fcollection.anki2" decodes to
+        let decoded = URL(string: "kartei://media/..%2Fcollection.anki2")!.lastPathComponent
+        XCTAssertNil(CardSchemeHandler.mediaFile(named: decoded, in: folder))
+        for name in ["..", ".", "", "a/b.png", "../../x"] { XCTAssertNil(CardSchemeHandler.mediaFile(named: name, in: folder), name) }
+    }
+
+    func testPlainHttpOnlyInsideTheLocalNetwork() {
+        // a public address typed without a scheme gets https, so the password is never sent in the clear
+        XCTAssertEqual(try? SyncText.endpoint(from: "203.0.113.7:8080").get(), "https://203.0.113.7:8080/")
+        XCTAssertEqual(try? SyncText.endpoint(from: "10.0.0.5:8080").get(), "http://10.0.0.5:8080/")
+        XCTAssertEqual(try? SyncText.endpoint(from: "172.20.1.2").get(), "http://172.20.1.2/")
+        XCTAssertEqual(try? SyncText.endpoint(from: "172.32.1.2").get(), "https://172.32.1.2/")
+        XCTAssertNil(try? SyncText.endpoint(from: "http://203.0.113.7:8080").get())
+        XCTAssertNil(try? SyncText.endpoint(from: "http://sync.example.org").get())
+        XCTAssertEqual(try? SyncText.endpoint(from: "http://192.168.1.20:8080").get(), "http://192.168.1.20:8080/")
+    }
+
     func testAnkiWebIsRefused() {
         for typed in ["https://sync.ankiweb.net/", "ankiweb.net", "sync2.ankiweb.net"] {
             guard case .failure(let p) = SyncText.endpoint(from: typed) else { return XCTFail(typed) }

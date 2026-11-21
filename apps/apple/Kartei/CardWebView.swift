@@ -163,7 +163,7 @@ final class CardSchemeHandler: NSObject, WKURLSchemeHandler {
     func webView(_ webView: WKWebView, start task: WKURLSchemeTask) {
         guard let url = task.request.url else { return }
         let name = url.lastPathComponent
-        let file: URL? = url.host == "app" ? Bundle.main.url(forResource: name, withExtension: nil) : mediaFolder?.appendingPathComponent(name)
+        let file: URL? = url.host == "app" ? Self.bundleFile(named: name) : mediaFolder.flatMap { Self.mediaFile(named: name, in: $0) }
         guard let file, let data = try? Data(contentsOf: file) else {
             task.didFailWithError(URLError(.fileDoesNotExist))
             return
@@ -179,6 +179,24 @@ final class CardSchemeHandler: NSObject, WKURLSchemeHandler {
     }
 
     func webView(_ webView: WKWebView, stop task: WKURLSchemeTask) {}
+
+    /// A file directly inside the media folder, or nil. The name comes from the card's HTML, which an imported
+    /// deck controls: a decoded "../collection.anki2" must not reach the collection next to the folder.
+    static func mediaFile(named name: String, in folder: URL) -> URL? {
+        guard isPlainName(name) else { return nil }
+        let file = folder.appendingPathComponent(name).standardizedFileURL
+        guard file.deletingLastPathComponent().path == folder.standardizedFileURL.path else { return nil }
+        return file
+    }
+
+    private static func bundleFile(named name: String) -> URL? {
+        isPlainName(name) ? Bundle.main.url(forResource: name, withExtension: nil) : nil
+    }
+
+    /// One path segment: no separators, not "." or "..", no NUL.
+    private static func isPlainName(_ name: String) -> Bool {
+        !name.isEmpty && name != "." && name != ".." && !name.contains("/") && !name.contains("\\") && !name.contains("\0")
+    }
 }
 
 /// A drag over the card page (iOS), reported so the review screen can grade by swipe.

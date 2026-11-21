@@ -36,10 +36,9 @@ enum SyncText {
         guard !s.isEmpty else { return .failure(.message("Enter the address of your sync server.")) }
         if !s.contains("://") {
             let hostPart = s.split(separator: "/").first.map(String.init) ?? s
-            let host = hostPart.split(separator: ":").first.map(String.init)?.lowercased() ?? hostPart
-            let local = host == "localhost" || host.hasSuffix(".local") || host.hasSuffix(".lan") || host.hasSuffix(".home.arpa")
-                || host.allSatisfy { $0.isNumber || $0 == "." } || host.hasPrefix("[")
-            s = (local ? "http://" : "https://") + s
+            let host = hostPart.hasPrefix("[") ? String(hostPart.prefix { $0 != "]" }) + "]"
+                : hostPart.split(separator: ":").first.map(String.init) ?? hostPart
+            s = (isLocalHost(host) ? "http://" : "https://") + s
         }
         guard let url = URL(string: s), let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
               let host = url.host, !host.isEmpty else {
@@ -48,8 +47,23 @@ enum SyncText {
         if host.lowercased().hasSuffix("ankiweb.net") {
             return .failure(.message("Bergmönch cannot sync with AnkiWeb: its terms only allow Anki's own apps. Use a self-hosted Anki sync server."))
         }
+        // the password and the host key travel in the request: plain http only inside the local network
+        if scheme == "http" && !isLocalHost(host) {
+            return .failure(.message("Plain http would send your password unencrypted. Use an https:// address."))
+        }
         if !s.hasSuffix("/") { s += "/" }
         return .success(s)
+    }
+
+    /// Hosts on this device or the local network, where plain http is acceptable (the same rule as on Android).
+    static func isLocalHost(_ host: String) -> Bool {
+        let h = host.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
+        if h == "localhost" || h.hasSuffix(".local") || h.hasSuffix(".lan") || h.hasSuffix(".home.arpa") { return true }
+        if h == "::1" || h.hasPrefix("fe80:") || (h.hasPrefix("fd") && h.contains(":")) { return true }
+        let parts = h.split(separator: ".", omittingEmptySubsequences: false).map { Int($0) }
+        guard parts.count == 4, parts.allSatisfy({ $0.map { (0...255).contains($0) } ?? false }) else { return false }
+        let a = parts[0]!, b = parts[1]!
+        return a == 10 || a == 127 || (a == 192 && b == 168) || (a == 172 && (16...31).contains(b)) || (a == 169 && b == 254)
     }
 
     /// "Synced just now", "Synced 2 min ago", "Synced 3 h ago", "Synced yesterday", "Synced 12 Nov".

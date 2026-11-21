@@ -16,6 +16,17 @@ import java.io.File
 private const val ORIGIN = "https://kartei.invalid"
 
 /**
+ * A file directly inside [folder], or null. The name comes from the card's HTML, which an imported deck controls,
+ * and Android hands it over decoded: "..%2Fcollection.anki2" arrives as "../collection.anki2" and must not reach
+ * the collection next to the media folder.
+ */
+internal fun mediaFile(name: String, folder: File): File? {
+    if (name.isEmpty() || name == "." || name == ".." || '/' in name || '\\' in name || '\u0000' in name) return null
+    val file = File(folder, name)
+    return if (file.canonicalFile.parentFile == folder.canonicalFile) file else null
+}
+
+/**
  * Builds the page for one side of a card. The deck's own CSS is kept, then Kartei's type and colours are laid over it
  * so that plain decks match the app. The question is set in the display face, the answer below one rule.
  */
@@ -214,7 +225,7 @@ fun CardWeb(html: String, mediaFolder: File, modifier: Modifier = Modifier, onMe
                                     WebResourceResponse("font/ttf", null, 200, "OK", headers, ctx.resources.openRawResource(res))
                                 }
                                 else -> {
-                                    val file = File(mediaFolder, name)
+                                    val file = mediaFile(name, mediaFolder) ?: throw java.io.FileNotFoundException(name)
                                     val type = when (file.extension.lowercase()) {
                                         "png" -> "image/png"; "jpg", "jpeg" -> "image/jpeg"; "gif" -> "image/gif"
                                         "svg" -> "image/svg+xml"; "webp" -> "image/webp"; "mp3" -> "audio/mpeg"
