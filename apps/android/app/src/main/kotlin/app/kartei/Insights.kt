@@ -57,7 +57,23 @@ object Insights {
 
     /** Reviews a day that [newPerDay] new cards settle at, at [retention] (≈10 per new card at 90 %). */
     fun steadyReviews(newPerDay: Int, retention: Double = RETENTION_DEFAULT, factor: Double = retentionLoadFactor(retention)): Int =
-        (newPerDay * REVIEWS_PER_NEW_CARD * factor).roundToInt()
+        (newPerDay * REVIEWS_PER_NEW_CARD * (factor.takeIf { it.isFinite() && it > 0 } ?: retentionLoadFactor(retention))).roundToInt()
+
+    /**
+     * The backend's workload per retention when it can be used: it covers the slider range, every value is a finite
+     * number and it is not all zero. A collection without review history gets zeros from the simulator.
+     * Same rule as Workload.usable in the Apple app.
+     */
+    fun usableWorkload(costs: Map<Int, Float>?): Map<Int, Float>? =
+        costs?.takeIf { c -> (RETENTION_MIN..RETENTION_MAX).all { c[it]?.isFinite() == true } && c.values.any { it > 0f } }
+
+    /** Reviews at [retention] relative to 90 %: from the simulator's [costs] when they give a number, else the estimate. */
+    fun workloadFactor(costs: Map<Int, Float>?, retention: Double): Double {
+        val at = costs?.get((retention * 100).roundToInt())?.toDouble()
+        val at90 = costs?.get(90)?.toDouble()
+        val simulated = if (at != null && at90 != null && at90 > 0) at / at90 else null
+        return simulated?.takeIf { it.isFinite() && it > 0 } ?: retentionLoadFactor(retention)
+    }
 
     fun minutesFor(cards: Int, secondsPerCard: Double): Int = if (cards <= 0) 0 else max(1, ((cards * secondsPerCard + 30) / 60).toInt())
 

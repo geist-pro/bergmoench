@@ -54,6 +54,25 @@ class WorkloadTest {
         assertEquals(10.0, m.getValue(90), 1e-9)
     }
 
+    @Test fun aWorkloadWithoutReviewHistoryIsNotUsable() {
+        // A new collection: the simulator answers with zero for every retention. Dividing by the cost at 90 % gave NaN,
+        // and rounding it crashed Settings a few seconds after it opened.
+        val zeros = (70..99).associateWith { 0f }
+        assertEquals(null, Insights.usableWorkload(zeros))
+        assertEquals(null, Insights.usableWorkload(zeros + (85 to Float.NaN)))
+        assertEquals(null, Insights.usableWorkload(mapOf(90 to 3f)))
+        assertEquals(null, Insights.usableWorkload(null))
+        val real = (70..99).associateWith { it.toFloat() }
+        assertEquals(real, Insights.usableWorkload(real))
+    }
+
+    @Test fun aSteadyStateWithoutAUsableFactorFallsBackToTheEstimate() {
+        assertEquals(Insights.steadyReviews(10, 0.9), Insights.steadyReviews(10, 0.9, Double.NaN))
+        assertEquals(Insights.steadyReviews(10, 0.9), Insights.steadyReviews(10, 0.9, Double.POSITIVE_INFINITY))
+        assertEquals(Insights.retentionLoadFactor(0.95), Insights.workloadFactor(mapOf(90 to 0f, 95 to 0f), 0.95), 1e-9)
+        assertEquals(2.0, Insights.workloadFactor(mapOf(90 to 3f, 95 to 6f), 0.95), 1e-9)
+    }
+
     @Test fun steadyStateTenReviewsPerNewCard() {
         assertEquals(100, Insights.steadyReviews(10))
         assertEquals(0, Insights.steadyReviews(0))

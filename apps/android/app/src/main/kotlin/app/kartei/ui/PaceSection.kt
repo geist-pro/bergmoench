@@ -112,7 +112,7 @@ fun PaceSection(store: DeckStore) {
                 state.preset?.takeIf { it.config.id != state.curveFor }?.let { p ->
                     state.curveFor = p.config.id
                     state.baseRetention = (p.config.config.desiredRetention * 100).roundToInt().coerceIn(Insights.RETENTION_MIN, 99)
-                    state.costs = runCatching { backend.retentionWorkload(p.config) }.getOrNull()?.takeIf { it.isNotEmpty() }
+                    state.costs = Insights.usableWorkload(runCatching { backend.retentionWorkload(p.config) }.getOrNull())
                 }
             }.onFailure { state.error = it.message }
         }
@@ -236,7 +236,7 @@ private fun WorkloadCurve(curve: Map<Int, Double>, value: Int) {
 private fun NewCardsBlock(saved: Int, secondsPerCard: Double, retention: Double, state: PaceState, onSave: (Int) -> Unit) {
     var value by remember(saved) { mutableStateOf(saved) }
     LaunchedEffect(value) { if (value != saved) { delay(700); onSave(value) } }
-    val factor = state.costs?.let { c -> c[(retention * 100).roundToInt()]?.let { a -> c[90]?.let { b -> (a / b).toDouble() } } } ?: Insights.retentionLoadFactor(retention)
+    val factor = Insights.workloadFactor(state.costs, retention)
     val reviews = Insights.steadyReviews(value, retention, factor)
     Row(Modifier.fillMaxWidth().padding(vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f).padding(end = 12.dp)) {
