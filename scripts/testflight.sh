@@ -37,6 +37,14 @@ xcodebuild -project Kartei.xcodeproj -scheme Kartei -configuration Release \
   KARTEI_SIGNING="${KARTEI_SIGNING:-team}" DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_IDENTITY="Apple Development" \
   CURRENT_PROJECT_VERSION="$BUILD_NUMBER" "${EXTRA[@]}" "${AUTH[@]}" archive | tail -3
 [[ -d "$OUT/Bergmoench.xcarchive" ]] || { echo "archive failed"; exit 1; }
+# Swift packages' resource bundles (SwiftProtobuf's privacy manifest) come out of the archive signed with the
+# development certificate, and the export re-signs only the app and the widget. App Store Connect then rejects
+# the Mac build (90284, reported only in the upload's state, not by xcodebuild). They hold no code: unsign them.
+if [[ $PLATFORM == macOS ]]; then
+  for b in "$OUT"/Bergmoench.xcarchive/Products/Applications/*.app/Contents/Resources/*.bundle(N); do
+    [[ -d "$b/Contents/MacOS" ]] || rm -rf "$b/Contents/_CodeSignature"
+  done
+fi
 cp ExportOptions.plist "$OUT/ExportOptions.plist"
 (( UPLOAD )) && /usr/libexec/PlistBuddy -c "Set :destination upload" "$OUT/ExportOptions.plist"
 /usr/libexec/PlistBuddy -c "Add :teamID string $APPLE_TEAM_ID" "$OUT/ExportOptions.plist"
