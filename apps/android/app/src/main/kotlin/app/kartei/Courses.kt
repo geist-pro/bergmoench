@@ -76,6 +76,13 @@ object CourseCatalogue {
         backend.call(DecksMethods.addOrUpdateFilteredDeck, deck, anki.collection.OpChangesWithId.parser()).id
     }.getOrNull()
 
+    /**
+     * First-session decks nobody is studying any more: the app was closed or restarted in the middle of the guided
+     * session, so the deck was never removed and its five cards never went home.
+     */
+    fun leftoverFirstSessions(rows: List<DeckRow>): List<Long> =
+        rows.filter { it.filtered && it.depth == 0 && it.name == FIRST_SESSION_NAME }.map { it.id }
+
     fun removeFirstSession(backend: Backend, id: Long) {
         runCatching {
             backend.call(DecksMethods.removeDecks, anki.decks.DeckIds.newBuilder().addDids(id).build(), anki.collection.OpChangesWithCount.parser())

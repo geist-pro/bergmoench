@@ -65,6 +65,14 @@ struct AppShell: View {
             }
         }
         .environment(prefs)
+        // A guided first session that was cut short leaves its filtered deck behind; send its cards home.
+        .onChange(of: CourseCatalogue.leftoverFirstSessions(store.rows), initial: true) { _, leftover in
+            guard !leftover.isEmpty, session == nil, firstSessionDeck == nil, let backend = store.backend else { return }
+            Task.detached {
+                for deck in leftover { CourseCatalogue.removeFirstSession(deck, backend: backend) }
+                await MainActor.run { store.refresh() }
+            }
+        }
         .onChange(of: store.backend == nil) { _, missing in
             if !missing, let backend = store.backend { prefs.load(backend); applyDefaults(backend) }
         }

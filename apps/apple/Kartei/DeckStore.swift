@@ -15,6 +15,11 @@ struct DeckRow: Identifiable {
     let due: Int
 }
 
+extension Array where Element == DeckRow {
+    /// The deck "Study now" opens: the first in the list that has something to study today (a parent counts its subdecks).
+    var firstToStudy: DeckRow? { first { $0.new + $0.learning + $0.due > 0 } }
+}
+
 @Observable
 final class DeckStore {
     enum Phase { case loading(String), ready, failed(String) }

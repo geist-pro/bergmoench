@@ -83,6 +83,12 @@ enum CourseCatalogue {
         return result.id
     }
 
+    /// First-session decks nobody is studying any more: the app was closed in the middle of the guided session,
+    /// so the deck was never removed and its five cards never went home.
+    static func leftoverFirstSessions(_ rows: [DeckRow]) -> [Int64] {
+        rows.filter { $0.filtered && $0.depth == 0 && $0.name == firstSessionName }.map(\.id)
+    }
+
     /// Remove the first-session deck; its cards return to their course decks with their progress.
     static func removeFirstSession(_ id: Int64, backend: Backend) {
         var req = Anki_Decks_DeckIds()

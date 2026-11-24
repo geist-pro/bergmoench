@@ -58,6 +58,15 @@ fun AppShell(store: DeckStore, theme: ThemePrefs) {
         if (prefs.loaded && prefs.onboarded && backend != null) withContext(Dispatchers.IO) { FirstRunDefaults.enableFsrsOnce(backend) }
     }
     LaunchedEffect(store.rows, store.studiedDays) { Reach.storeDidUpdate(store) }
+    // A guided first session that was cut short leaves its filtered deck behind; send its cards home.
+    LaunchedEffect(store.rows, session) {
+        val backend = store.backend ?: return@LaunchedEffect
+        if (session != null || firstSessionDeck != null) return@LaunchedEffect
+        val leftover = app.kartei.CourseCatalogue.leftoverFirstSessions(store.rows)
+        if (leftover.isEmpty()) return@LaunchedEffect
+        withContext(Dispatchers.IO) { leftover.forEach { app.kartei.CourseCatalogue.removeFirstSession(backend, it) } }
+        store.refresh()
+    }
 
     val current = session
     when {

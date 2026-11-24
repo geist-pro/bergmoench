@@ -140,9 +140,15 @@ final class ReviewSession {
         audio?.play([tags[index]])
     }
 
+    /// Time on the card in milliseconds, at most a minute. The clock can step back while a card is shown
+    /// (a time correction from the network); a negative time would not fit the unsigned field.
+    static func answerMillis(shownAt: Date, now: Date) -> UInt32 {
+        UInt32(max(0, min(now.timeIntervalSince(shownAt), 60)) * 1000)
+    }
+
     func answer(_ rating: Rating) {
         guard case .answer = phase, let card = current else { return }
-        let taken = UInt32(min(Date().timeIntervalSince(shownAt), 60) * 1000)
+        let taken = Self.answerMillis(shownAt: shownAt, now: Date())
         let states = self.states
         stopAudio()
         phase = .loading

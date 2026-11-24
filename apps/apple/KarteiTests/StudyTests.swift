@@ -8,6 +8,34 @@ import XCTest
 // MARK: - Pure logic
 
 final class StudyLogicTests: XCTestCase {
+    private func row(_ id: Int64, _ name: String, filtered: Bool = false, new: Int = 0, due: Int = 0) -> DeckRow {
+        DeckRow(id: id, name: name, depth: 0, hasChildren: false, filtered: filtered, new: new, learning: 0, due: due)
+    }
+
+    func testStudyNowOpensTheFirstDeckWithCards() {
+        let done = row(1, "Cooperation Systems"), open = row(2, "Grundlagen der Programmierung", new: 3, due: 4)
+        XCTAssertEqual([done, open].firstToStudy?.id, 2)
+        XCTAssertEqual([row(1, "Cooperation Systems", due: 1), open].firstToStudy?.id, 1)
+        XCTAssertNil([done].firstToStudy)
+        XCTAssertNil([DeckRow]().firstToStudy)
+    }
+
+    func testAFirstSessionDeckLeftBehindIsFound() {
+        let rows = [row(1, "Grundlagen der Programmierung WS26/27", new: 10),
+                    row(2, CourseCatalogue.firstSessionName, filtered: true, new: 5),
+                    row(3, CourseCatalogue.firstSessionName, new: 5),
+                    row(4, "Custom study", filtered: true, new: 5)]
+        XCTAssertEqual(CourseCatalogue.leftoverFirstSessions(rows), [2])
+        XCTAssertEqual(CourseCatalogue.leftoverFirstSessions([]), [])
+    }
+
+    func testAnswerTimeSurvivesAClockThatStepsBack() {
+        let shown = Date(timeIntervalSince1970: 1_000)
+        XCTAssertEqual(ReviewSession.answerMillis(shownAt: shown, now: shown.addingTimeInterval(-2)), 0)
+        XCTAssertEqual(ReviewSession.answerMillis(shownAt: shown, now: shown.addingTimeInterval(1.5)), 1500)
+        XCTAssertEqual(ReviewSession.answerMillis(shownAt: shown, now: shown.addingTimeInterval(600)), 60_000)
+    }
+
     private func node(_ text: String) -> Anki_CardRendering_RenderedTemplateNode {
         var n = Anki_CardRendering_RenderedTemplateNode(); n.text = text; return n
     }

@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.kartei.DeckRow
 import app.kartei.DeckStore
+import app.kartei.firstToStudy
 import app.kartei.Phase
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -164,7 +165,7 @@ fun HomeScreen(store: DeckStore, study: (DeckRow) -> Unit) {
                         }
                     }
                 }
-                val first = store.rows.firstOrNull()
+                val first = store.rows.firstToStudy()
                 if (first != null && store.cardsToday > 0) {
                     Row(Modifier.padding(top = 12.dp).fillMaxWidth().heightIn(min = 56.dp).background(Ink.accent).clickable(role = Role.Button) { study(first) }.padding(horizontal = 20.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically) {

@@ -98,7 +98,8 @@ fun PaceSection(store: DeckStore) {
                 val byConfig = linkedMapOf<Long, MutableList<Long>>()
                 var all = listOf<anki.deck_config.DeckConfigsForUpdate.ConfigWithExtra>()
                 var fsrs = true
-                for (row in store.rows.ifEmpty { listOf(app.kartei.DeckRow(1, "Default", 0, 0, 0, 0)) }) {
+                // A filtered deck has no options preset: asking for one fails ("deck not normal").
+                for (row in store.rows.filterNot { it.filtered }.ifEmpty { listOf(app.kartei.DeckRow(1, "Default", 0, 0, 0, 0)) }) {
                     val info = backend.configsFor(row.id)
                     all = info.allConfigList; fsrs = info.fsrs
                     byConfig.getOrPut(info.currentDeck.configId) { mutableListOf() } += row.id
@@ -385,6 +386,6 @@ internal fun newCardsSummary(newPerDay: Int, secondsPerCard: Double) = Insights.
 /** Used by onboarding to write its choices. */
 internal suspend fun DeckStore.applyOnboardingPace(newPerDay: Int) {
     val backend = backend ?: return
-    val ids = rows.map { it.id }.ifEmpty { listOf(1L) }
+    val ids = rows.filterNot { it.filtered }.map { it.id }.ifEmpty { listOf(1L) }
     withContext(Dispatchers.IO) { runCatching { backend.applyStartingPace(ids, newPerDay) } }
 }

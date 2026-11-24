@@ -100,7 +100,8 @@ fun OnboardingScreen(store: DeckStore, prefs: StudyPrefs, startFirstSession: (Lo
                 chosen.isEmpty() -> KButton("Continue without a course", primary = false) { page = 2 }
                 else -> KButton(if (chosen.size == 1) "Add this course" else "Add ${chosen.size} courses") {
                     importing = true
-                    store.importCourses(chosenCourses) { importing = false; page = 2 }
+                    // A failed import stays on this page, where its message is shown.
+                    store.importCourses(chosenCourses) { added -> importing = false; if (added > 0 || store.rows.isNotEmpty()) page = 2 }
                 }
             }
             else -> if (firstCourse != null && store.rows.isNotEmpty()) {

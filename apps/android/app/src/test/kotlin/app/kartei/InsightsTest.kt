@@ -73,6 +73,13 @@ class WorkloadTest {
         assertEquals(2.0, Insights.workloadFactor(mapOf(90 to 3f, 95 to 6f), 0.95), 1e-9)
     }
 
+    @Test fun aReviewDatedAfterNowCountsAsJustNow() {
+        // Synced from a device whose clock runs ahead: negative days gave NaN, and rounding it crashed Card info.
+        assertEquals(1.0, Insights.recall(-3.0, 0.5, 0.2), 1e-9)
+        assertEquals(1.0, Insights.recall(0.0, 0.5, 0.2), 1e-9)
+        assertTrue(Insights.recall(1.0, 0.5, 0.2) < 1.0)
+    }
+
     @Test fun steadyStateTenReviewsPerNewCard() {
         assertEquals(100, Insights.steadyReviews(10))
         assertEquals(0, Insights.steadyReviews(0))

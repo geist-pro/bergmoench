@@ -240,7 +240,8 @@ object Insights {
     fun recall(days: Double, stability: Double, decay: Double): Double {
         if (stability <= 0) return 0.0
         val factor = 0.9.pow(-1 / decay) - 1
-        return (1 + factor * days / stability).pow(-decay)
+        // A review dated after the device's clock (synced from a device that runs ahead) counts as just now.
+        return (1 + factor * days.coerceAtLeast(0.0) / stability).pow(-decay)
     }
 
     /** Decay from a card's FSRS parameters: the 21st parameter in FSRS-6, otherwise FSRS-5's fixed 0.5. */

@@ -21,7 +21,10 @@ import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-data class DeckRow(val id: Long, val name: String, val depth: Int, val new: Int, val learning: Int, val due: Int)
+data class DeckRow(val id: Long, val name: String, val depth: Int, val new: Int, val learning: Int, val due: Int, val filtered: Boolean = false)
+
+/** The deck "Study now" opens: the first in the list that has something to study today (a parent counts its subdecks). */
+fun List<DeckRow>.firstToStudy(): DeckRow? = firstOrNull { it.new + it.learning + it.due > 0 }
 
 sealed interface Phase {
     data class Loading(val what: String) : Phase
@@ -81,6 +84,9 @@ class DeckStore(app: Application) : AndroidViewModel(app) {
             val ctx = getApplication<Application>()
             val dir = File(ctx.filesDir, "collection").apply { mkdirs() }
             File(dir, "media").mkdirs()
+            // The backend writes temporary files (imports, exports, sync) to $TMPDIR. Android sets it for apps only from
+            // version 13 on; before that Rust falls back to /data/local/tmp, which an app may not write to.
+            runCatching { android.system.Os.setenv("TMPDIR", getApplication<Application>().cacheDir.absolutePath, true) }
             val backend = Backend().also { this.backend = it }
             ankiVersion = Backend.ankiVersion
             backend.run(
@@ -257,7 +263,7 @@ class DeckStore(app: Application) : AndroidViewModel(app) {
             fun walk(n: anki.decks.DeckTreeNode, depth: Int) {
                 // Like Anki, leave out an empty top-level deck (the unused "Default").
                 if (depth == 0 && n.totalIncludingChildren == 0) return
-                out += DeckRow(n.deckId, n.name, depth, n.newCount, n.learnCount, n.reviewCount)
+                out += DeckRow(n.deckId, n.name, depth, n.newCount, n.learnCount, n.reviewCount, n.filtered)
                 n.childrenList.forEach { walk(it, depth + 1) }
             }
             root.childrenList.forEach { walk(it, 0) }

@@ -11,6 +11,27 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CourseTest {
+    @Test fun aFirstSessionDeckLeftBehindIsFound() {
+        val rows = listOf(
+            DeckRow(1, "Grundlagen der Programmierung WS26/27", 0, 10, 0, 0),
+            DeckRow(2, CourseCatalogue.FIRST_SESSION_NAME, 0, 5, 0, 0, filtered = true),
+            // a deck the student named the same, and someone's own filtered deck, stay
+            DeckRow(3, CourseCatalogue.FIRST_SESSION_NAME, 0, 5, 0, 0),
+            DeckRow(4, "Custom study", 0, 5, 0, 0, filtered = true),
+        )
+        assertEquals(listOf(2L), CourseCatalogue.leftoverFirstSessions(rows))
+        assertEquals(emptyList<Long>(), CourseCatalogue.leftoverFirstSessions(emptyList()))
+    }
+
+    @Test fun studyNowOpensTheFirstDeckWithCards() {
+        val done = DeckRow(1, "Cooperation Systems", 0, 0, 0, 0)
+        val open = DeckRow(2, "Grundlagen der Programmierung", 0, 3, 1, 4)
+        assertEquals(open, listOf(done, open).firstToStudy())
+        assertEquals(done.copy(due = 1), listOf(done.copy(due = 1), open).firstToStudy())
+        assertNull(listOf(done).firstToStudy())
+        assertNull(emptyList<DeckRow>().firstToStudy())
+    }
+
     @Test fun typedOutputJoinsLinesLikeAnki() {
         assertEquals("0.0 5", TypedText.forComparison("0.0\n5"))
         assertEquals("0.0 5", TypedText.forComparison("0.0  \r\n5\n\n"))

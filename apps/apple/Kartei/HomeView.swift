@@ -58,7 +58,7 @@ struct HomeView: View {
                 }
                 .scrollIndicators(.hidden)
                 .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if let first = store.rows.first, store.cardsToday > 0 {
+                    if let first = store.rows.firstToStudy, store.cardsToday > 0 {
                         Button { study(first) } label: { PrimaryLabel(title: "Study now", detail: "\(store.cardsToday) cards") }
                             .buttonStyle(.plain).keyboardShortcut(.defaultAction)
                             .padding(.top, 8).padding(.bottom, 8)
